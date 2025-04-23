@@ -6,19 +6,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import uk.gov.hmcts.cp.openapi.api.DefaultApi;
 import uk.gov.hmcts.cp.openapi.model.CaseJudiciaryResult;
-import uk.gov.hmcts.cp.services.OpenApiService;
+import uk.gov.hmcts.cp.services.CourtHearingCasesService;
 
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-public class OpenApiController implements DefaultApi {
+public class CourtHearingCasesController implements DefaultApi {
 
-    private final OpenApiService openApiService;
+    private final CourtHearingCasesService courtHearingCasesService;
 
     @Override
     public ResponseEntity<List<CaseJudiciaryResult>> getCaseLevelResults(String caseId) {
-        List<CaseJudiciaryResult> caseLevelResultsList = openApiService.getCaseLevelResults(caseId);
+        List<CaseJudiciaryResult> caseLevelResultsList = courtHearingCasesService.getCaseLevelResults(caseId);
         return new ResponseEntity<>(caseLevelResultsList, HttpStatus.OK);
     }
 
