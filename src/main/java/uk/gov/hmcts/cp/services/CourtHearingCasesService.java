@@ -7,10 +7,9 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class OpenApiService {
+public class CourtHearingCasesService {
 
     public List<CaseJudiciaryResult> getCaseLevelResults(String caseId) {
-        CaseJudiciaryResult caseJudiciaryResult = new CaseJudiciaryResult();
         return Arrays.asList(new CaseJudiciaryResult("Sample1 CaseJudiciaryResult"),
                       new CaseJudiciaryResult("Sample2 CaseJudiciaryResult"));
 
