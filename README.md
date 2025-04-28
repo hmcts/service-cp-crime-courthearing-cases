@@ -57,8 +57,7 @@ The template contains the following plugins:
   ```bash
     ./gradlew jacocoTestReport
   ```
-
-  The report will be created in build/reports subdirectory in your project directory.
+ The report will be created in build/reports subdirectory in your project directory.
 
 * io.spring.dependency-management
 
