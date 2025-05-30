@@ -2,11 +2,11 @@ plugins {
   id 'application'
   id 'java'
   id 'io.spring.dependency-management' version '1.1.7'
-  id 'org.springframework.boot' version '3.4.5'
+  id 'org.springframework.boot' version '3.5.0'
   id 'jacoco'
   id 'maven-publish'
   id "com.github.ben-manes.versions" version "0.52.0"
-  id "org.cyclonedx.bom" version "2.3.0"
+  id "org.cyclonedx.bom" version "2.3.1"
 }
 
 group = 'uk.gov.hmcts.cp'
@@ -16,14 +16,23 @@ def githubActor = project.findProperty("github.actor") ?: System.getenv("GITHUB_
 def githubToken = project.findProperty("github.token") ?: System.getenv("GITHUB_TOKEN")
 def githubRepo = System.getenv("GITHUB_REPOSITORY")
 
+def azureADOArtifactRepository = 'https://pkgs.dev.azure.com/hmcts/Artifacts/_packaging/hmcts-lib/maven/v1'
+def azureADOArtifactActor = System.getenv("AZURE_DEVOPS_ARTIFACT_USERNAME")
+def azureADOArtifactToken = System.getenv("AZURE_DEVOPS_ARTIFACT_TOKEN")
+
 //debugging
-//if (githubActor != null) {
-//  println "🔐 Configuring GitHub Packages publishing to: https://maven.pkg.github.com/${githubRepo}"
-//}
-//println "GitHub Packages publishing required environment variables:"
-//println " - GITHUB_ACTOR=${githubActor != null ? '✔' : '❌'}"
-//println " - GITHUB_TOKEN=${githubToken != null ? '✔' : '❌'}"
-//println " - GITHUB_REPOSITORY=${githubRepo != null ? '✔' : '❌'}"
+//    if (githubActor != null) {
+//      println "🔐 Configuring GitHub Packages publishing to: https://maven.pkg.github.com/$githubRepo"
+//    }
+//    println "GitHub Packages publishing required environment variables:"
+//    println " - GITHUB_ACTOR=${githubActor != null ? ' ✔ FOUND' : '❌'}"
+//    println " - GITHUB_TOKEN=${githubToken != null ? ' ✔ FOUND' : '❌'}"
+//    println " - GITHUB_REPOSITORY=${githubRepo != null ? ' ✔ FOUND' : '❌'}"
+
+//    println "Azure ADO publishing required environment variables:"
+//    println " - AZURE_DEVOPS_ARTIFACT_USERNAME=${azureADOArtifactActor != null ? ' ✔ FOUND' : '❌'}"
+//    println " - AZURE_DEVOPS_ARTIFACT_TOKEN=${azureADOArtifactToken != null ? ' ✔ FOUND' : '❌'}"
+
 
 java {
   sourceCompatibility = JavaVersion.VERSION_21
@@ -53,6 +62,11 @@ configurations {
 
   integrationTestImplementation.extendsFrom testImplementation
   integrationTestRuntimeOnly.extendsFrom runtimeOnly
+
+  // Ensure testRuntimeClasspath can be resolved for agent injection
+  testRuntimeClasspath {
+    canBeResolved = true
+  }
 }
 
 
@@ -69,26 +83,61 @@ tasks.named('test') {
   useJUnitPlatform()
   systemProperty 'API_SPEC_VERSION', project.version
   failFast = true
+  // Mockito must be added as an agent, see:
+  // https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+  jvmArgs += [
+    "-javaagent:${configurations.testRuntimeClasspath.find { it.name.contains('mockito-core') }}", '-Xshare:off'
+  ]
   testLogging {
     events "passed", "skipped", "failed"
     exceptionFormat = 'full'
     showStandardStreams = true
   }
+  reports {
+    junitXml.required.set(true) // For CI tools (e.g. Jenkins, GitHub Actions)
+    html.required.set(true)     // Human-readable browser report
+  }
 }
 
-task functional(type: Test) {
+tasks.register('functional', Test) {
   description = "Runs functional tests"
   group = "Verification"
   testClassesDirs = sourceSets.functionalTest.output.classesDirs
   classpath = sourceSets.functionalTest.runtimeClasspath
+  useJUnitPlatform()
+  failFast = true
+  testLogging {
+    events "passed", "skipped", "failed"
+    exceptionFormat = 'full'
+    showStandardStreams = true
+  }
+  reports {
+    junitXml.required.set(true) // For CI tools (e.g. Jenkins, GitHub Actions)
+    html.required.set(true)     // Human-readable browser report
+  }
 }
-
-task integration(type: Test) {
+tasks.register('integration', Test) {
   description = "Runs integration tests"
   group = "Verification"
   testClassesDirs = sourceSets.integrationTest.output.classesDirs
   classpath = sourceSets.integrationTest.runtimeClasspath
+  useJUnitPlatform()
   failFast = true
+  testLogging {
+    events "passed", "skipped", "failed"
+    exceptionFormat = 'full'
+    showStandardStreams = true
+  }
+  reports {
+    junitXml.required.set(true) // For CI tools (e.g. Jenkins, GitHub Actions)
+    html.required.set(true)     // Human-readable browser report
+  }
+}
+
+tasks.named('build') {
+  dependsOn tasks.named('test')
+  dependsOn tasks.named('integration')
+//  dependsOn tasks.named('functional') disabling until functional tests are implemented
 }
 
 tasks.named('jacocoTestReport') {
@@ -98,10 +147,6 @@ tasks.named('jacocoTestReport') {
     csv.required.set(false)
     html.required.set(true)
   }
-}
-
-tasks.named('check') {
-  dependsOn tasks.named('integration')
 }
 
 // check dependencies upon release ONLY
@@ -120,14 +165,7 @@ repositories {
   mavenLocal()
   mavenCentral()
   maven {
-    url = uri("https://maven.pkg.github.com/hmcts/*")
-    credentials {
-      username = githubActor
-      password = githubToken
-    }
-  }
-  maven {
-    url = 'https://jitpack.io'
+    url = azureADOArtifactRepository
   }
 }
 
@@ -141,10 +179,18 @@ publishing {
   repositories {
     maven {
       name = "GitHubPackages"
-      url = uri("https://maven.pkg.github.com/${githubRepo}")
+      url = uri("https://maven.pkg.github.com/$githubRepo")
       credentials {
         username = githubActor
         password = githubToken
+      }
+    }
+    maven {
+      name = "AzureArtifacts"
+      url = uri(azureADOArtifactRepository)
+      credentials {
+        username = azureADOArtifactActor
+        password = azureADOArtifactToken
       }
     }
   }
@@ -185,11 +231,10 @@ application {
 }
 
 ext {
-  apiCasesVersion="0.1.1"
+  apiCasesVersion="0.4.0"
   log4JVersion = "2.24.3"
   logbackVersion = "1.5.18"
   lombokVersion = "1.18.38"
-  springBootVersion = "3.4.5"
 }
 
 dependencies {
@@ -202,24 +247,29 @@ dependencies {
   implementation 'org.springframework.boot:spring-boot-starter-aop'
   implementation 'org.springframework.boot:spring-boot-starter-json'
 
-  implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.1.11'
-  implementation 'com.azure.spring:spring-cloud-azure-trace-sleuth:4.20.0'
+  implementation platform('io.micrometer:micrometer-tracing-bom:latest.release')
+  implementation 'io.micrometer:micrometer-tracing'
+  implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+  implementation 'io.micrometer:micrometer-registry-azure-monitor'
+  implementation 'com.azure:azure-monitor-opentelemetry-autoconfigure:1.2.0'
 
   implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
   implementation group: 'org.apache.logging.log4j', name: 'log4j-to-slf4j', version: log4JVersion
   implementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
   implementation group: 'ch.qos.logback', name: 'logback-core', version: logbackVersion
 
-  implementation group: 'io.rest-assured', name: 'rest-assured', version: '5.5.2'
-  implementation 'org.hibernate.validator:hibernate-validator:8.0.2.Final'
-  implementation 'org.apache.commons:commons-lang3:3.17.0'
+  implementation group: 'io.rest-assured', name: 'rest-assured', version: '5.5.5'
+  implementation 'org.hibernate.validator:hibernate-validator:9.0.0.Final'
+  implementation 'org.apache.commons:commons-text:1.13.1'
 
   compileOnly group: 'org.projectlombok', name: 'lombok', version: lombokVersion
   annotationProcessor group: 'org.projectlombok', name: 'lombok', version: lombokVersion
 
   testImplementation(platform('org.junit:junit-bom:5.12.2'))
+  testImplementation 'org.mockito:mockito-core:5.18.0'
+  testRuntimeOnly 'org.mockito:mockito-inline:5.2.0'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-  testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: springBootVersion, {
+  testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '3.5.0', {
     exclude group: 'junit', module: 'junit'
     exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
   }
