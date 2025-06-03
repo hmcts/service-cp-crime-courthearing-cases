@@ -34,6 +34,7 @@ public class CourtHearingCasesController implements CasesApi {
             throw e;
             }
         }
+      
         LOG.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_JSON)
