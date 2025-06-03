@@ -13,18 +13,18 @@ import uk.gov.hmcts.cp.repositories.CourtHearingCasesRepository;
 @Service
 @RequiredArgsConstructor
 public class CourtHearingCasesService {
-    private static final Logger log = LoggerFactory.getLogger(CourtHearingCasesService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CourtHearingCasesService.class);
 
     private final CourtHearingCasesRepository courtHearingCasesRepository;
 
-    public CaseJudiciaryResponse getCaseLevelResults(String caseId) {
+    public CaseJudiciaryResponse getCaseLevelResults(final String caseId) {
         if (StringUtils.isEmpty(caseId)) {
-            log.warn("No case id provided");
+            LOG.warn("No case id provided");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caseId is required");
         }
-        log.warn("NOTE: System configured to return stubbed Case results details. Ignoring provided caseUrId : {}", caseId);
-        CaseJudiciaryResponse stubbedCaseJudiciaryResponse = courtHearingCasesRepository.getCaseLevelResults(caseId);
-        log.debug("Case Result response: {}", stubbedCaseJudiciaryResponse);
+        LOG.warn("NOTE: System configured to return stubbed Case results details. Ignoring provided caseUrId : {}", caseId);
+        final CaseJudiciaryResponse stubbedCaseJudiciaryResponse = courtHearingCasesRepository.getCaseLevelResults(caseId);
+        LOG.debug("Case Result response: {}", stubbedCaseJudiciaryResponse);
         return stubbedCaseJudiciaryResponse;
     }
 }

@@ -16,21 +16,21 @@ public class GlobalExceptionHandler {
 
     private final Tracer tracer;
 
-    public GlobalExceptionHandler(Tracer tracer) {
+    public GlobalExceptionHandler(final Tracer tracer) {
         this.tracer = tracer;
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException e) {
-        ErrorResponse error = ErrorResponse.builder()
-                .error(String.valueOf(e.getStatusCode().value()))
-                .message(e.getReason() != null ? e.getReason() : e.getMessage())
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(final ResponseStatusException exception) {
+        final ErrorResponse error = ErrorResponse.builder()
+                .error(String.valueOf(exception.getStatusCode().value()))
+                .message(exception.getReason() != null ? exception.getReason() : exception.getMessage())
                 .timestamp(OffsetDateTime.now(ZoneOffset.UTC))
                 .traceId(Objects.requireNonNull(tracer.currentSpan()).context().traceId())
                 .build();
 
         return ResponseEntity
-                .status(e.getStatusCode())
+                .status(exception.getStatusCode())
                 .body(error);
     }
 }

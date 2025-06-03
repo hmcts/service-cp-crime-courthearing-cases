@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class InMemoryCourtHearingCasesRepositoryImpl implements CourtHearingCasesRepository {
 
     public CaseJudiciaryResponse getCaseLevelResults(String caseId) {
-        CaseJudiciaryResult caseJudiciaryResult = CaseJudiciaryResult.builder()
+        final CaseJudiciaryResult caseJudiciaryResult = CaseJudiciaryResult.builder()
             .resultText("This is the example outcome of case results")
             .build();
         return CaseJudiciaryResponse.builder()

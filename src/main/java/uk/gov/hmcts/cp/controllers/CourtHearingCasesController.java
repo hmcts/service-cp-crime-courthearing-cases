@@ -14,32 +14,36 @@ import uk.gov.hmcts.cp.services.CourtHearingCasesService;
 
 @RestController
 public class CourtHearingCasesController implements CasesApi {
-    private static final Logger log = LoggerFactory.getLogger(CourtHearingCasesController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CourtHearingCasesController.class);
     private final CourtHearingCasesService courtHearingCasesService;
 
-    public CourtHearingCasesController(CourtHearingCasesService courtHearingCasesService) {
+    public CourtHearingCasesController(final CourtHearingCasesService courtHearingCasesService) {
         this.courtHearingCasesService = courtHearingCasesService;
     }
 
     @Override
-    public ResponseEntity<CaseJudiciaryResponse> getCaseLevelResults(String caseId) {
-        String sanitizeCaseId;
-        CaseJudiciaryResponse caseJudiciaryResponse;
+    public ResponseEntity<CaseJudiciaryResponse> getCaseLevelResults(final String caseId) {
+        String sanitizeCaseId = "";
+        CaseJudiciaryResponse caseJudiciaryResponse = null;
         try {
             sanitizeCaseId = sanitizeCaseId(caseId);
             caseJudiciaryResponse = courtHearingCasesService.getCaseLevelResults(sanitizeCaseId);
         } catch (ResponseStatusException e) {
-            log.error(e.getMessage());
+            if(LOG.isErrorEnabled()){
+            LOG.error(e.getMessage());
             throw e;
+            }
         }
-        log.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
+        LOG.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_JSON)
             .body(caseJudiciaryResponse);
     }
 
-    private String sanitizeCaseId(String caseId) {
-        if (caseId == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caseId is required");
+    private String sanitizeCaseId(final String caseId) {
+        if (caseId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caseId is required");
+        }
         return StringEscapeUtils.escapeHtml4(caseId);
     }
 
