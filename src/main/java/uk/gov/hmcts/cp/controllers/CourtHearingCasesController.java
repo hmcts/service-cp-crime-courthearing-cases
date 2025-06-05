@@ -23,8 +23,8 @@ public class CourtHearingCasesController implements CasesApi {
 
     @Override
     public ResponseEntity<CaseJudiciaryResponse> getCaseLevelResults(final String caseId) {
-        String sanitizeCaseId = "";
-        CaseJudiciaryResponse caseJudiciaryResponse = null;
+        final String sanitizeCaseId;
+        final CaseJudiciaryResponse caseJudiciaryResponse;
         try {
             sanitizeCaseId = sanitizeCaseId(caseId);
             caseJudiciaryResponse = courtHearingCasesService.getCaseLevelResults(sanitizeCaseId);
