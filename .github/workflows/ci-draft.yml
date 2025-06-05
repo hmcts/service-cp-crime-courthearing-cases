@@ -66,22 +66,23 @@ jobs:
       - name: Gradle Build and Publish on Push [Merge]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_DEVOPS_ARTIFACT_USERNAME: ${{ secrets.AZURE_DEVOPS_ARTIFACT_USERNAME }}
+          AZURE_DEVOPS_ARTIFACT_TOKEN: ${{ secrets.AZURE_DEVOPS_ARTIFACT_TOKEN }}
         run: |
           VERSION=${{ needs.Artefact-Version.outputs.draft_version }}
-      
+
           gradle build \
-            -DAPI_SPEC_VERSION=$VERSION \
-            -DGITHUB_REPOSITORY=${{ github.repository }} \
-            -DGITHUB_ACTOR=${{ github.actor }} \
-            -DGITHUB_TOKEN=$GITHUB_TOKEN
-      
+            -DAPI_SPEC_VERSION=$VERSION
+
           if [ "${{ github.event_name }}" == "push" ]; then
             echo "Push event trigger - Publishing artefact"
             gradle publish \
               -DAPI_SPEC_VERSION=$VERSION \
               -DGITHUB_REPOSITORY=${{ github.repository }} \
               -DGITHUB_ACTOR=${{ github.actor }} \
-              -DGITHUB_TOKEN=$GITHUB_TOKEN
+              -DGITHUB_TOKEN=$GITHUB_TOKEN \
+              -DAZURE_DEVOPS_ARTIFACT_USERNAME=$AZURE_DEVOPS_ARTIFACT_USERNAME \
+              -DAZURE_DEVOPS_ARTIFACT_TOKEN=$AZURE_DEVOPS_ARTIFACT_TOKEN
           else
             echo "Skipping publish because this is a pull_request"
           fi
@@ -146,14 +147,30 @@ jobs:
 
     steps:
       - name: Trigger ADO pipeline
-        uses: microsoft/azure-pipelines-action@v1
-        with:
-          azure-devops-project-url: 'https://dev.azure.com/hmcts-cpp/cpp-apps'
-          azure-pipeline-name: 'hmcts/cpp-azure-devops-templates/pipelines/vp-build.yaml'
-          azure-devops-token: ${{ secrets.HMCTS_ADO_PAT }}
-          azure-pipeline-variables: |
-            {            
-              "GROUP_ID" : "uk.gov.hmcts.cp",
-              "ARTIFACT_ID" : "${{ github.repository }}",
-              "ARTIFACT_VERSION" : "${{ needs.Artefact-Version.outputs.draft_version}}"
-            }
+        env:
+          ADO_ORG: 'hmcts-cpp'
+          ADO_PROJECT: 'cpp-apps'
+          PIPELINE_ID: 460 #cp-gh-artifact-to-acr
+          ADO_PAT: ${{ secrets.HMCTS_ADO_PAT }}
+        run: |
+          ARTEFACT_VERSION="${{ needs.Artefact-Version.outputs.draft_version }}"
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+
+          curl -X POST \
+            -u ":${ADO_PAT}" \
+            -H "Content-Type: application/json" \
+            https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}/_apis/pipelines/${PIPELINE_ID}/runs?api-version=7.0 \
+            -d "{
+              \"resources\": {
+                \"repositories\": {
+                  \"self\": {
+                    \"refName\": \"refs/heads/main\"
+                  }
+                }
+              },
+              \"templateParameters\": {
+                \"GROUP_ID\": \"uk.gov.hmcts.cp\",
+                \"ARTIFACT_ID\": \"${REPO_NAME}\",
+                \"ARTIFACT_VERSION\": \"${ARTEFACT_VERSION}\"
+              }
+            }"
