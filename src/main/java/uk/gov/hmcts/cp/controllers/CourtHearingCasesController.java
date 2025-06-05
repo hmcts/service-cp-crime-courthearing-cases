@@ -29,10 +29,8 @@ public class CourtHearingCasesController implements CasesApi {
             sanitizeCaseId = sanitizeCaseId(caseId);
             caseJudiciaryResponse = courtHearingCasesService.getCaseLevelResults(sanitizeCaseId);
         } catch (ResponseStatusException e) {
-            if(LOG.isErrorEnabled()){
-            LOG.error(e.getMessage());
+            LOG.atError().log(e.getMessage());
             throw e;
-            }
         }
 
         LOG.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
