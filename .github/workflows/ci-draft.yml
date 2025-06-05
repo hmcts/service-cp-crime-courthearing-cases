@@ -66,22 +66,23 @@ jobs:
       - name: Gradle Build and Publish on Push [Merge]
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_DEVOPS_ARTIFACT_USERNAME: ${{ secrets.AZURE_DEVOPS_ARTIFACT_USERNAME }}
+          AZURE_DEVOPS_ARTIFACT_TOKEN: ${{ secrets.AZURE_DEVOPS_ARTIFACT_TOKEN }}
         run: |
           VERSION=${{ needs.Artefact-Version.outputs.draft_version }}
-      
+
           gradle build \
-            -DAPI_SPEC_VERSION=$VERSION \
-            -DGITHUB_REPOSITORY=${{ github.repository }} \
-            -DGITHUB_ACTOR=${{ github.actor }} \
-            -DGITHUB_TOKEN=$GITHUB_TOKEN
-      
+            -DAPI_SPEC_VERSION=$VERSION
+
           if [ "${{ github.event_name }}" == "push" ]; then
             echo "Push event trigger - Publishing artefact"
             gradle publish \
               -DAPI_SPEC_VERSION=$VERSION \
               -DGITHUB_REPOSITORY=${{ github.repository }} \
               -DGITHUB_ACTOR=${{ github.actor }} \
-              -DGITHUB_TOKEN=$GITHUB_TOKEN
+              -DGITHUB_TOKEN=$GITHUB_TOKEN \
+              -DAZURE_DEVOPS_ARTIFACT_USERNAME=$AZURE_DEVOPS_ARTIFACT_USERNAME \
+              -DAZURE_DEVOPS_ARTIFACT_TOKEN=$AZURE_DEVOPS_ARTIFACT_TOKEN
           else
             echo "Skipping publish because this is a pull_request"
           fi
@@ -152,7 +153,7 @@ jobs:
           azure-pipeline-name: 'hmcts/cpp-azure-devops-templates/pipelines/vp-build.yaml'
           azure-devops-token: ${{ secrets.HMCTS_ADO_PAT }}
           azure-pipeline-variables: |
-            {            
+            {
               "GROUP_ID" : "uk.gov.hmcts.cp",
               "ARTIFACT_ID" : "${{ github.repository }}",
               "ARTIFACT_VERSION" : "${{ needs.Artefact-Version.outputs.draft_version}}"
