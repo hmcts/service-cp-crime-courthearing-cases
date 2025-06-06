@@ -19,12 +19,12 @@ public class CourtHearingCasesService {
 
     public CaseJudiciaryResponse getCaseLevelResults(final String caseId) {
         if (StringUtils.isEmpty(caseId)) {
-            LOG.warn("No case id provided");
+            LOG.atWarn().log("No case id provided");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "caseId is required");
         }
-        LOG.warn("NOTE: System configured to return stubbed Case results details. Ignoring provided caseUrId : {}", caseId);
+        LOG.atWarn().log("NOTE: System configured to return stubbed Case results details. Ignoring provided caseUrId : {}", caseId);
         final CaseJudiciaryResponse stubbedCaseJudiciaryResponse = courtHearingCasesRepository.getCaseLevelResults(caseId);
-        LOG.debug("Case Result response: {}", stubbedCaseJudiciaryResponse);
+        LOG.atDebug().log("Case Result response: {}", stubbedCaseJudiciaryResponse);
         return stubbedCaseJudiciaryResponse;
     }
 }

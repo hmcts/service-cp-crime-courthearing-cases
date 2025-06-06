@@ -23,16 +23,14 @@ public class CourtHearingCasesController implements CasesApi {
 
     @Override
     public ResponseEntity<CaseJudiciaryResponse> getCaseLevelResults(final String caseId) {
-        String sanitizeCaseId = "";
-        CaseJudiciaryResponse caseJudiciaryResponse = null;
+        final String sanitizeCaseId;
+        final CaseJudiciaryResponse caseJudiciaryResponse;
         try {
             sanitizeCaseId = sanitizeCaseId(caseId);
             caseJudiciaryResponse = courtHearingCasesService.getCaseLevelResults(sanitizeCaseId);
         } catch (ResponseStatusException e) {
-            if(LOG.isErrorEnabled()){
-            LOG.error(e.getMessage());
+            LOG.atError().log(e.getMessage());
             throw e;
-            }
         }
 
         LOG.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
