@@ -4,9 +4,10 @@ import org.springframework.stereotype.Repository;
 import uk.gov.hmcts.cp.openapi.model.CaseJudiciaryResponse;
 
 @Repository
-@FunctionalInterface
+//@FunctionalInterface
 public interface CourtHearingCasesRepository {
 
     CaseJudiciaryResponse getCaseLevelResults(String caseId);
-
+    void saveCaseLevelResults(final String caseUrn, final CaseJudiciaryResponse courtHouseResponse);
+    void clearAll();
 }
