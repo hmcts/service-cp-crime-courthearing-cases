@@ -24,12 +24,12 @@ public class InMemoryCourtHearingCasesRepositoryImpl implements CourtHearingCase
 
     public CaseJudiciaryResponse getCaseLevelResults(String caseId) {
         if (!caseJudiciaryResponseMap.containsKey(caseId)) {
-            saveCaseLevelResults(caseId, createCaseLevelResults(caseId));
+            saveCaseLevelResults(caseId, createCaseLevelResults());
         }
         return caseJudiciaryResponseMap.get(caseId);
     }
 
-    private CaseJudiciaryResponse createCaseLevelResults(String caseId) {
+    private CaseJudiciaryResponse createCaseLevelResults() {
         final CaseJudiciaryResult caseJudiciaryResult = CaseJudiciaryResult.builder()
             .resultText("This is the example outcome of case results")
             .caseUrn("DVL12XM5")
