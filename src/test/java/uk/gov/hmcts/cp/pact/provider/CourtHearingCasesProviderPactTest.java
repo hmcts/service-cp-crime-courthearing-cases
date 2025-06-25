@@ -23,12 +23,13 @@ import static java.util.Arrays.asList;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@ActiveProfiles("test")  // important: use the in-memory repo!
 @ExtendWith({SpringExtension.class, PactVerificationInvocationContextProvider.class})
 @Provider("VPCasePactProvider")
 @PactBroker(
-        scheme = "https",
-        host = "hmcts-dts.pactflow.io")
+    scheme = "https",
+    host = "${pact.broker.host}",
+    authentication = @PactBrokerAuth(token = "${pact.broker.token}")
+)
 @Tag("pact")
 public class CourtHearingCasesProviderPactTest {
 
@@ -40,20 +41,13 @@ public class CourtHearingCasesProviderPactTest {
 
     @BeforeEach
     void setupTarget(PactVerificationContext context) {
-        System.out.println("Running test on port: " + port);
         context.setTarget(new HttpTestTarget("localhost", port));
-        System.out.println("pact.verifier.publishResults: " + System.getProperty("pact.verifier.publishResults"));
     }
 
-  /*  @BeforeEach
-    public void setupTestTarget(PactVerificationContext context) {
-        context.setTarget(new HttpTestTarget("localhost", 8080));
-    }*/
 
     @State("case with ID 123 exists")
     public void setupCaseLevelResults() {
         courtHearingCasesRepository.clearAll();
-
         final CaseJudiciaryResult caseJudiciaryResult = CaseJudiciaryResult.builder()
             .resultText("This is the example outcome of case results")
             .caseUrn("DVL12XM5")
@@ -70,4 +64,5 @@ public class CourtHearingCasesProviderPactTest {
     void pactVerificationTestTemplate(PactVerificationContext context) {
         context.verifyInteraction();
     }
+
 }

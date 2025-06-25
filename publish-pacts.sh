@@ -19,7 +19,7 @@ fi
 export GIT_BRANCH="$BRANCH_NAME"
 
 # Run provider verification with results published
-./gradlew test \
+gradle pactVerificationTest \
   -Dpact.provider.version="$GIT_COMMIT" \
   -Dpact.verifier.publishResults=true \
   -Dpact.provider.branch="$GIT_BRANCH" \
