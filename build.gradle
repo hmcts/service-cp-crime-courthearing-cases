@@ -144,24 +144,6 @@ tasks.register('integration', Test) {
   }
 }
 
-tasks.register('pactContractTest', Test) {
-  description = "Runs Pact provider verification tests"
-  group = "Verification"
-  testClassesDirs = sourceSets.pactContractTest.output.classesDirs
-  classpath = sourceSets.pactContractTest.runtimeClasspath
-  useJUnitPlatform()
-  failFast = true
-  testLogging {
-    events "passed", "skipped", "failed"
-    exceptionFormat = 'full'
-    showStandardStreams = true
-  }
-  reports {
-    junitXml.required.set(true)
-    html.required.set(true)
-  }
-}
-
 tasks.named('build') {
   dependsOn tasks.named('test')
   dependsOn tasks.named('integration')
@@ -310,10 +292,15 @@ dependencies {
     }
   }
 
-  tasks.register('pactVerificationTest', Test) {
+  tasks.register('pactContractTest', Test) {
+    description = "Runs Pact provider verification tests"
+    group = "Verification"
+    testClassesDirs = sourceSets.pactContractTest.output.classesDirs
+    classpath = sourceSets.pactContractTest.runtimeClasspath
     useJUnitPlatform {
       includeTags 'pact'
     }
+    failFast = true
     systemProperty 'pact.broker.url', System.getenv('PACT_BROKER_URL')
     systemProperty 'pact.broker.token', System.getenv('PACT_BROKER_TOKEN')
     systemProperty 'pact.provider.version', System.getenv('GIT_COMMIT') ?: 'dev'
@@ -321,5 +308,9 @@ dependencies {
     systemProperty 'pact.verifier.publishResults', System.getenv('PACT_VERIFIER_PUBLISH_RESULTS')
     systemProperty 'pact.broker.host', System.getenv('PACT_BROKER_HOST')
     systemProperty 'pact.env', System.getenv('PACT_ENV')
+    reports {
+      junitXml.required.set(true)
+      html.required.set(true)
+    }
   }
 }
