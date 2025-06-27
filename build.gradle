@@ -54,6 +54,13 @@ sourceSets {
     }
     resources.srcDir file('src/integrationTest/resources')
   }
+  pactContractTest {
+    java {
+      compileClasspath += sourceSets.main.output
+      runtimeClasspath += sourceSets.main.output
+    }
+    resources.srcDir file('src/pactContractTest/resources')
+  }
 }
 
 configurations {
@@ -62,6 +69,9 @@ configurations {
 
   integrationTestImplementation.extendsFrom testImplementation
   integrationTestRuntimeOnly.extendsFrom runtimeOnly
+
+  pactContractTestImplementation.extendsFrom testImplementation
+  pactContractTestRuntimeOnly.extendsFrom runtimeOnly
 
   // Ensure testRuntimeClasspath can be resolved for agent injection
   testRuntimeClasspath {
@@ -131,6 +141,24 @@ tasks.register('integration', Test) {
   reports {
     junitXml.required.set(true) // For CI tools (e.g. Jenkins, GitHub Actions)
     html.required.set(true)     // Human-readable browser report
+  }
+}
+
+tasks.register('pactContractTest', Test) {
+  description = "Runs Pact provider verification tests"
+  group = "Verification"
+  testClassesDirs = sourceSets.pactContractTest.output.classesDirs
+  classpath = sourceSets.pactContractTest.runtimeClasspath
+  useJUnitPlatform()
+  failFast = true
+  testLogging {
+    events "passed", "skipped", "failed"
+    exceptionFormat = 'full'
+    showStandardStreams = true
+  }
+  reports {
+    junitXml.required.set(true)
+    html.required.set(true)
   }
 }
 
