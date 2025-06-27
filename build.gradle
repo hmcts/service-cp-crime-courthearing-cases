@@ -70,8 +70,8 @@ configurations {
   integrationTestImplementation.extendsFrom testImplementation
   integrationTestRuntimeOnly.extendsFrom runtimeOnly
 
-  pactverificationTestImplementation.extendsFrom testImplementation
-  pactverificationTestRuntimeOnly.extendsFrom runtimeOnly
+  pactVerificationTestImplementation.extendsFrom testImplementation
+  pactVerificationTestRuntimeOnly.extendsFrom runtimeOnly
 
   // Ensure testRuntimeClasspath can be resolved for agent injection
   testRuntimeClasspath {
