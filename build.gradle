@@ -54,12 +54,12 @@ sourceSets {
     }
     resources.srcDir file('src/integrationTest/resources')
   }
-  pactContractTest {
+  pactVerificationTest {
     java {
       compileClasspath += sourceSets.main.output
       runtimeClasspath += sourceSets.main.output
     }
-    resources.srcDir file('src/pactContractTest/resources')
+    resources.srcDir file('src/pactVerificationTest/resources')
   }
 }
 
@@ -70,8 +70,8 @@ configurations {
   integrationTestImplementation.extendsFrom testImplementation
   integrationTestRuntimeOnly.extendsFrom runtimeOnly
 
-  pactContractTestImplementation.extendsFrom testImplementation
-  pactContractTestRuntimeOnly.extendsFrom runtimeOnly
+  pactverificationTestImplementation.extendsFrom testImplementation
+  pactverificationTestRuntimeOnly.extendsFrom runtimeOnly
 
   // Ensure testRuntimeClasspath can be resolved for agent injection
   testRuntimeClasspath {
@@ -292,11 +292,11 @@ dependencies {
     }
   }
 
-  tasks.register('pactContractTest', Test) {
+  tasks.register('pactVerificationTest', Test) {
     description = "Runs Pact provider verification tests"
     group = "Verification"
-    testClassesDirs = sourceSets.pactContractTest.output.classesDirs
-    classpath = sourceSets.pactContractTest.runtimeClasspath
+    testClassesDirs = sourceSets.pactVerificationTest.output.classesDirs
+    classpath = sourceSets.pactVerificationTest.runtimeClasspath
     useJUnitPlatform {
       includeTags 'pact'
     }
