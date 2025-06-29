@@ -24,7 +24,7 @@ import static java.util.Arrays.asList;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ExtendWith({SpringExtension.class, PactVerificationInvocationContextProvider.class})
-@Provider("VPCaseProvider")
+@Provider("CPHearingCasesProvider")
 @PactBroker(
     scheme = "https",
     host = "${pact.broker.host}",
