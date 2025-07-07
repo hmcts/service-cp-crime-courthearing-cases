@@ -4,16 +4,24 @@
 
 Further documentation see the [HMCTS Marketplace Springboot template readme](https://github.com/hmcts/service-hmcts-marketplace-springboot-template/blob/main/README.md).
 
-### Run pact provider test and publish verification report to pact broker locally
+## Pact Provider Test
 
-update .env file with below details
-PACT_BROKER_URL= <<PactFlow broker url>>
-PACT_BROKER_HOST=<<PactFlow broker url excluding https://>>
-PACT_BROKER_TOKEN= <<Your PactFlow broker token>>
-PACT_ENV= << This is the environment in PactFlow broker to which we tag the contracts>
-PACT_VERIFIER_PUBLISH_RESULTS=true
-run ./publish-pacts.sh
+Run pact provider test and publish verification report to pact broker locally
+
+Update .env file with below details (replacing placeholders with actual values):
+```bash
+export PACT_BROKER_URL="https://hmcts-dts.pactflow.io"
+export PACT_BROKER_HOST="hmcts-dts.pactflow.io"
+export PACT_BROKER_TOKEN="YOUR_PACTFLOW_BROKER_TOKEN"
+export PACT_ENV="REPLACE WITH ENVIRONMENT IN PACTFLOW BROKER TO WHICH TO TAG THE CONTRACTS"
+export PACT_VERIFIER_PUBLISH_RESULTS=true
+```
+Run Pact tests:
+```bash
+gradle pactVerificationTest
+```
+
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
