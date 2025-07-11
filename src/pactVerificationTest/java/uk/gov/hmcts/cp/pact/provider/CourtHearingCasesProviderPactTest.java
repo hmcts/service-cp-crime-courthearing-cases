@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -21,17 +23,16 @@ import uk.gov.hmcts.cp.repositories.CourtHearingCasesRepository;
 
 import static java.util.Arrays.asList;
 
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ExtendWith({SpringExtension.class, PactVerificationInvocationContextProvider.class})
 @Provider("CPHearingCasesProvider")
 @PactBroker(
-    scheme = "https",
-    host = "${pact.broker.host}",
+    url = "${pact.broker.url}",
     authentication = @PactBrokerAuth(token = "${pact.broker.token}")
 )
 @Tag("pact")
 public class CourtHearingCasesProviderPactTest {
+    private static final Logger LOG = LoggerFactory.getLogger(CourtHearingCasesProviderPactTest.class);
 
     @Autowired
     private CourtHearingCasesRepository courtHearingCasesRepository;
@@ -41,9 +42,10 @@ public class CourtHearingCasesProviderPactTest {
 
     @BeforeEach
     void setupTarget(PactVerificationContext context) {
+        LOG.atDebug().log("Running test on port: " + port);
         context.setTarget(new HttpTestTarget("localhost", port));
+        LOG.atDebug().log("pact.verifier.publishResults: " + System.getProperty("pact.verifier.publishResults"));
     }
-
 
     @State("case with ID 123 exists")
     public void setupCaseLevelResults() {
