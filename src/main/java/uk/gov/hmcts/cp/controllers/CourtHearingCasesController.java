@@ -1,8 +1,7 @@
 package uk.gov.hmcts.cp.controllers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +11,9 @@ import uk.gov.hmcts.cp.openapi.api.CasesApi;
 import uk.gov.hmcts.cp.openapi.model.CaseJudiciaryResponse;
 import uk.gov.hmcts.cp.services.CourtHearingCasesService;
 
+@Slf4j
 @RestController
 public class CourtHearingCasesController implements CasesApi {
-    private static final Logger LOG = LoggerFactory.getLogger(CourtHearingCasesController.class);
     private final CourtHearingCasesService courtHearingCasesService;
 
     public CourtHearingCasesController(final CourtHearingCasesService courtHearingCasesService) {
@@ -29,11 +28,11 @@ public class CourtHearingCasesController implements CasesApi {
             sanitizeCaseId = sanitizeCaseId(caseId);
             caseJudiciaryResponse = courtHearingCasesService.getCaseLevelResults(sanitizeCaseId);
         } catch (ResponseStatusException e) {
-            LOG.atError().log(e.getMessage());
+            log.atError().log(e.getMessage());
             throw e;
         }
 
-        LOG.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
+        log.debug("Found case judiciary response for caseId: {}", sanitizeCaseId);
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_JSON)
             .body(caseJudiciaryResponse);

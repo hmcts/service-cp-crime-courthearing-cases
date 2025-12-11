@@ -7,227 +7,20 @@ plugins {
   id 'maven-publish'
   id "com.github.ben-manes.versions" version "0.52.0"
   id "org.cyclonedx.bom" version "2.3.1"
-  id "au.com.dius.pact" version "4.6.17"
+  id 'com.gorylenko.gradle-git-properties' version '2.5.4'
 }
-
 group = 'uk.gov.hmcts.cp'
 version = System.getProperty('ARTEFACT_VERSION') ?: '0.0.999'
 
-def githubActor = project.findProperty("github.actor") ?: System.getenv("GITHUB_ACTOR")
-def githubToken = project.findProperty("github.token") ?: System.getenv("GITHUB_TOKEN")
-def githubRepo = System.getenv("GITHUB_REPOSITORY")
-
-def azureADOArtifactRepository = 'https://pkgs.dev.azure.com/hmcts/Artifacts/_packaging/hmcts-lib/maven/v1'
-def azureADOArtifactActor = System.getenv("AZURE_DEVOPS_ARTIFACT_USERNAME")
-def azureADOArtifactToken = System.getenv("AZURE_DEVOPS_ARTIFACT_TOKEN")
-
-java {
-  sourceCompatibility = JavaVersion.VERSION_21
-  targetCompatibility = JavaVersion.VERSION_21
-}
-
-sourceSets {
-  integrationTest {
-    java {
-      compileClasspath += sourceSets.main.output
-      runtimeClasspath += sourceSets.main.output
-    }
-    resources.srcDir file('src/integrationTest/resources')
-  }
-  pactVerificationTest {
-    java {
-      compileClasspath += sourceSets.main.output
-      runtimeClasspath += sourceSets.main.output
-    }
-    resources.srcDir file('src/pactVerificationTest/resources')
-  }
-}
-
-configurations {
-  integrationTestImplementation.extendsFrom testImplementation
-  integrationTestRuntimeOnly.extendsFrom runtimeOnly
-
-  pactVerificationTestImplementation.extendsFrom testImplementation
-  pactVerificationTestRuntimeOnly.extendsFrom runtimeOnly
-
-  // Ensure testRuntimeClasspath can be resolved for agent injection
-  testRuntimeClasspath {
-    canBeResolved = true
-  }
-}
-
-
-tasks.withType(JavaCompile) {
-  options.compilerArgs << "-Xlint:unchecked" << "-Werror"
-}
-
-// https://github.com/gradle/gradle/issues/16791
-tasks.withType(JavaExec).configureEach {
-  javaLauncher.set(javaToolchains.launcherFor(java.toolchain))
-}
-
-tasks.named('test') {
-  useJUnitPlatform{
-    excludeTags 'pact'
-  }
-  systemProperty 'API_SPEC_VERSION', project.version
-  failFast = true
-  // Mockito must be added as an agent, see:
-  // https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
-  jvmArgs += [
-    "-javaagent:${configurations.testRuntimeClasspath.find { it.name.contains('mockito-core') }}", '-Xshare:off'
-  ]
-  testLogging {
-    events "passed", "skipped", "failed"
-    exceptionFormat = 'full'
-    showStandardStreams = true
-  }
-  reports {
-    junitXml.required.set(true)
-    html.required.set(true)
-  }
-}
-
-tasks.register('integration', Test) {
-  description = "Runs integration tests"
-  group = "Verification"
-  testClassesDirs = sourceSets.integrationTest.output.classesDirs
-  classpath = sourceSets.integrationTest.runtimeClasspath
-  useJUnitPlatform()
-  failFast = true
-  testLogging {
-    events "passed", "skipped", "failed"
-    exceptionFormat = 'full'
-    showStandardStreams = true
-  }
-  reports {
-    junitXml.required.set(true)
-    html.required.set(true)
-  }
-}
-
-tasks.register('pactVerificationTest', Test) {
-  description = "Runs Pact provider verification tests"
-  group = "Verification"
-  testClassesDirs = sourceSets.pactVerificationTest.output.classesDirs
-  classpath = sourceSets.pactVerificationTest.runtimeClasspath
-  useJUnitPlatform {
-    includeTags 'pact'
-  }
-  failFast = true
-
-  def sysOrEnv = { String key ->
-    System.getProperty(key) ?: System.getenv(key.toUpperCase().replace('.', '_'))
-  }
-  systemProperty 'pact.broker.url', sysOrEnv('pact.broker.url')
-  systemProperty 'pact.broker.token', sysOrEnv('pact.broker.token')
-  systemProperty 'pact.provider.version', sysOrEnv('pact.provider.version')
-  systemProperty 'pact.provider.branch', sysOrEnv('pact.provider.branch')
-  systemProperty 'pact.verifier.publishResults', sysOrEnv('pact.verifier.publishResults')
-  systemProperty 'pact.env', sysOrEnv( 'pact.env') ?: 'local'
-  reports {
-    junitXml.required.set(true)
-    html.required.set(true)
-  }
-}
-
-tasks.named('build') {
-  dependsOn tasks.named('test')
-  dependsOn tasks.named('integration')
-}
-
-tasks.named('jacocoTestReport') {
-  dependsOn tasks.named('test')
-  reports {
-    xml.required.set(true)
-    csv.required.set(false)
-    html.required.set(true)
-  }
-}
-
-tasks.named('check') {
-  dependsOn tasks.named('integration')
-}
-
-// check dependencies upon release ONLY
-tasks.named("dependencyUpdates").configure {
-  def isNonStable = { String version ->
-    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { qualifier -> version.toUpperCase().contains(qualifier) }
-    def regex = /^[0-9,.v-]+$/
-    return !stableKeyword && !(version ==~ regex)
-  }
-  rejectVersionIf {
-    isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
-  }
-}
-
-repositories {
-  mavenLocal()
-  mavenCentral()
-  maven {
-    url = azureADOArtifactRepository
-  }
-}
-
-publishing {
-  publications {
-    mavenJava(MavenPublication) {
-      artifact(tasks.named('bootJar'))
-      artifact(tasks.named('jar'))
-    }
-  }
-  repositories {
-    maven {
-      name = "GitHubPackages"
-      url = uri("https://maven.pkg.github.com/$githubRepo")
-      credentials {
-        username = githubActor
-        password = githubToken
-      }
-    }
-    maven {
-      name = "AzureArtifacts"
-      url = uri(azureADOArtifactRepository)
-      credentials {
-        username = azureADOArtifactActor
-        password = azureADOArtifactToken
-      }
-    }
-  }
-}
-
-//Creation of Software Bill of Materials
-//https://github.com/CycloneDX/cyclonedx-gradle-plugin
-cyclonedxBom {
-  includeConfigs = ["runtimeClasspath"]
-  skipConfigs = ["compileClasspath", "testImplementation"]
-  schemaVersion = "1.6"
-  componentVersion = providers.provider { project.version.toString() }
-  destination = file("$buildDir/reports")
-}
-
-jar {
-  enabled = true
-  archiveClassifier.set('plain')
-  if (file("CHANGELOG.md").exists()) {
-    from('CHANGELOG.md') {
-      into 'META-INF'
-    }
-  } else {
-    println "⚠️  CHANGELOG.md not found, skipping inclusion in JAR"
-  }
-}
-
-bootJar {
-  archiveFileName = "${rootProject.name}-${project.version}.jar"
-
-  manifest {
-    attributes('Implementation-Version': project.version.toString())
-  }
-}
-
-application {
-  mainClass = 'uk.gov.hmcts.cp.Application'
+apply {
+  from("$rootDir/gradle/dependency.gradle")
+  from("$rootDir/gradle/buildinfo.gradle")
+  from("$rootDir/gradle/integration.gradle")
+  from("$rootDir/gradle/jar.gradle")
+  from("$rootDir/gradle/java.gradle")
+  from("$rootDir/gradle/pmd.gradle")
+  from("$rootDir/gradle/repositories.gradle")
+  from("$rootDir/gradle/test.gradle")
 }
 
 ext {
@@ -236,11 +29,6 @@ ext {
   logbackVersion = "1.5.18"
   lombokVersion = "1.18.38"
 }
-
-tasks.named('processPactVerificationTestResources') {
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
 
 dependencies {
   implementation "uk.gov.hmcts.cp:api-cp-crime-courthearing-cases:$apiCasesVersion"
