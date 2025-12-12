@@ -2,17 +2,17 @@ package uk.gov.hmcts.cp.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import static java.util.UUID.randomUUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,12 +23,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
-@AutoConfigureMockMvc
 class CourtHearingCasesControllerIT {
-    private static final Logger log = LoggerFactory.getLogger(CourtHearingCasesControllerIT.class);
 
     @Autowired
+    private WebApplicationContext context;
+
     private MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    }
 
     @Test
     void shouldReturnOkWhenValidCaseIdIsProvided() throws Exception {
@@ -38,7 +43,6 @@ class CourtHearingCasesControllerIT {
             .andExpect(status().isOk())
             .andExpect(result -> {
                 String responseBody = result.getResponse().getContentAsString();
-                log.info("Response: {}", responseBody);
                 JsonNode jsonBody = new ObjectMapper().readTree(result.getResponse().getContentAsString());
 
                 assertEquals("caseResults", jsonBody.fieldNames().next());
@@ -48,7 +52,6 @@ class CourtHearingCasesControllerIT {
 
                 String resultText = courtResults.get(0).get("resultText").asText();
                 assertEquals("This is the example outcome of case results", resultText);
-                log.info("Response Object: {}", jsonBody);
             });
     }
 

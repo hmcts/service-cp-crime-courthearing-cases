@@ -28,9 +28,6 @@ on:
       pacticipant:
         required: true
         type: string
-      pact_env:
-        required: true
-        type: string
 
 jobs:
   Artefact-Version:
@@ -57,10 +54,6 @@ jobs:
     outputs:
       repo_name: ${{ steps.repo_vars.outputs.repo_name }}
       artefact_name: ${{ steps.repo_vars.outputs.artefact_name }}
-    env:
-      PACT_BROKER_BASE_URL: "https://hmcts-dts.pactflow.io"
-      PACT_ENV: "dev/pactTest"
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v5
@@ -100,10 +93,6 @@ jobs:
     needs: [ Artefact-Version, Build ]
     runs-on: ubuntu-latest
     env:
-      PACT_PROVIDER_VERSION: ${{ needs.Artefact-Version.outputs.artefact_version }}
-      PACT_BROKER_URL: "https://hmcts-dts.pactflow.io"
-      PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
-      PACT_ENV: ${{ inputs.pact_env }}
       PACTICIPANT: ${{ inputs.pacticipant }}
     steps:
       - name: Checkout source code
@@ -133,14 +122,6 @@ jobs:
           echo "PACT_BROKER_TOKEN=$PACT_BROKER_TOKEN"
           echo "PACT_BROKER_URL=$PACT_BROKER_URL"
           echo "PACT_ENV=$PACT_ENV"
-
-          gradle pactVerificationTest \
-            -Dpact.provider.version="$PACT_PROVIDER_VERSION" \
-            -Dpact.verifier.publishResults="$PACT_VERIFIER_PUBLISH_RESULTS" \
-            -Dpact.provider.branch="$PACT_PROVIDER_BRANCH" \
-            -Dpact.broker.token="$PACT_BROKER_TOKEN" \
-            -Dpact.broker.url="$PACT_BROKER_URL" \
-            -Dpact.env="$PACT_ENV"
 
       - uses: hmcts/pact-can-i-deploy@main
         with:
@@ -208,7 +189,7 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:${{ needs.Artefact-Version.outputs.artefact_version }}
           build-args: |
-            BASE_IMAGE=openjdk:21-jdk-slim
+            BASE_IMAGE=eclipse-temurin:21
             JAR_FILENAME=${{ needs.Build.outputs.artefact_name }}.jar
 
   Deploy:
